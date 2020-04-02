@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.appcompat.widget.Toolbar
@@ -13,13 +14,27 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.android.volley.Request
+import com.android.volley.RequestQueue
+import com.android.volley.Response
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.Volley
 import com.bumptech.glide.Glide
+import com.glennreilly.androidproficiencyexercise.models.FactRow
+import com.glennreilly.androidproficiencyexercise.models.Facts
+import com.google.gson.Gson
+import org.json.JSONObject
 
 class FactListFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var linearLayoutManager: RecyclerView.LayoutManager
     private lateinit var canAdapter: CanAdapter
     private lateinit var toolbar: Toolbar
+    private lateinit var queue: RequestQueue
+
+    companion object {
+        val TAG = FactListFragment::class.java.simpleName
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -32,83 +47,55 @@ class FactListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         toolbar = view.findViewById(R.id.toolbar)
-        toolbar.title = "Get Title from Json.."
+        toolbar.title = "getting title.. getting title.."
         setupRecyclerView(view)
     }
 
     private fun setupRecyclerView(view: View) {
-        val itemList = getDataToDisplay()
         linearLayoutManager = LinearLayoutManager(activity)
-        canAdapter = CanAdapter(itemList, activity)
         recyclerView = view.findViewById(R.id.recyclerview)
+        canAdapter = CanAdapter(emptyList(), activity)
 
         recyclerView.apply {
             layoutManager = linearLayoutManager
             adapter = canAdapter
         }
+        requestFacts()
     }
 
-    private fun getDataToDisplay(): List<ItemOfInterest> {
+    private fun updateRecyclerView(facts: Facts) {
+        facts.factRows?.let {
+            canAdapter = CanAdapter(it, activity)
+        }
+
+        recyclerView.apply {
+            adapter = canAdapter.apply { notifyDataSetChanged() }
+        }
+    }
+
+    private fun requestFacts() {
         val url = "https://dl.dropboxusercontent.com/s/2iodh4vg0eortkl/facts.json"
-        
-        val itemList = listOf(
-            ItemOfInterest(
-                "Beavers",
-                "Beavers are second only to humans in their ability to manipulate and change their environment. They can measure up to 1.3 metres long. A group of beavers is called a colony",
-                "http://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/American_Beaver.jpg/220px-American_Beaver.jpg"
-            ),
-            ItemOfInterest(
-                "Flag",
-                null,
-                "http://images.findicons.com/files/icons/662/world_flag/128/flag_of_canada.png"
-            ),
-            ItemOfInterest(
-                "titleThree",
-                "descriptionThree",
-                "http://1.bp.blogspot.com/_VZVOmYVm68Q/SMkzZzkGXKI/AAAAAAAAADQ/U89miaCkcyo/s400/the_golden_compass_still.jpg"
-            ),
-            ItemOfInterest(
-                "Hockey Night in Canada",
-                "These Saturday night CBC broadcasts originally aired on radio in 1931. In 1952 they debuted on television and continue to unite (and divide) the nation each week.",
-                "http://fyimusic.ca/wp-content/uploads/2008/06/hockey-night-in-canada.thumbnail.jpg"
-            ),
-            ItemOfInterest(
-                "Housing",
-                "Warmer than you might think.",
-                "http://icons.iconarchive.com/icons/iconshock/alaska/256/Igloo-icon.png"
-            ),
-            ItemOfInterest(null, null, null),
-            ItemOfInterest(
-                "Beavers",
-                "Beavers are second only to humans in their ability to manipulate and change their environment. They can measure up to 1.3 metres long. A group of beavers is called a colony",
-                "http://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/American_Beaver.jpg/220px-American_Beaver.jpg"
-            ),
-            ItemOfInterest(
-                "Flag",
-                null,
-                "http://images.findicons.com/files/icons/662/world_flag/128/flag_of_canada.png"
-            ),
-            ItemOfInterest(
-                "titleThree",
-                "descriptionThree",
-                "http://1.bp.blogspot.com/_VZVOmYVm68Q/SMkzZzkGXKI/AAAAAAAAADQ/U89miaCkcyo/s400/the_golden_compass_still.jpg"
-            ),
-            ItemOfInterest(
-                "Hockey Night in Canada",
-                "These Saturday night CBC broadcasts originally aired on radio in 1931. In 1952 they debuted on television and continue to unite (and divide) the nation each week.",
-                "http://fyimusic.ca/wp-content/uploads/2008/06/hockey-night-in-canada.thumbnail.jpg"
-            ),
-            ItemOfInterest(
-                "Housing",
-                "Warmer than you might think.",
-                "http://icons.iconarchive.com/icons/iconshock/alaska/256/Igloo-icon.png"
-            )
+        queue = Volley.newRequestQueue(activity)
+        val jsonObjectRequest = JsonObjectRequest(
+            Request.Method.GET,
+            url,
+            null,
+            Response.Listener { response: JSONObject ->
+                val facts: Facts = Gson().fromJson(response.toString(), Facts::class.java)
+                toolbar.title = facts.title
+                updateRecyclerView(facts)
+            },
+            Response.ErrorListener { error ->
+                Toast.makeText(activity, error.message, Toast.LENGTH_LONG).show()
+            }
         )
-        return itemList
+
+        queue.add(jsonObjectRequest)
+
     }
 
     class CanAdapter(
-        private val itemList: List<ItemOfInterest>,
+        private val itemList: List<FactRow>,
         private val activity: FragmentActivity?
     ) :
         RecyclerView.Adapter<CanAdapter.ItemOfInterestViewHolder>() {
@@ -141,13 +128,16 @@ class FactListFragment : Fragment() {
 
             activity?.let {
                 Glide.with(it)
-                    .load(itemList[position].imageUrl)
+                    .load(itemList[position].imageHref)
                     .into(imageView)
             }
         }
 
         data class ItemOfInterestViewHolder(val rowView: View) : RecyclerView.ViewHolder(rowView)
     }
-
-    data class ItemOfInterest(val title: String?, val description: String?, val imageUrl: String?)
+    
+    override fun onStop() {
+        queue.cancelAll(TAG)
+        super.onStop()
+    }
 }
