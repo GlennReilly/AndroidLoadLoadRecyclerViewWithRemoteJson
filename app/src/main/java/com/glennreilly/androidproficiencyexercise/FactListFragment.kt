@@ -47,7 +47,7 @@ class FactListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         toolbar = view.findViewById(R.id.toolbar)
-        toolbar.title = "getting title.. getting title.."
+        toolbar.title = getString(R.string.temporaryTitle)
         setupRecyclerView(view)
     }
 
@@ -64,9 +64,14 @@ class FactListFragment : Fragment() {
     }
 
     private fun updateRecyclerView(facts: Facts) {
-        facts.factRows?.let {
-            canAdapter = CanAdapter(it, activity)
+        facts.factRows?.filter {
+            (it.description.isNullOrBlank() &&
+                    it.title.isNullOrBlank() &&
+                    it.imageHref.isNullOrBlank()).not()
         }
+            ?.let {
+                canAdapter = CanAdapter(it, activity)
+            }
 
         recyclerView.apply {
             adapter = canAdapter.apply { notifyDataSetChanged() }
@@ -135,7 +140,7 @@ class FactListFragment : Fragment() {
 
         data class ItemOfInterestViewHolder(val rowView: View) : RecyclerView.ViewHolder(rowView)
     }
-    
+
     override fun onStop() {
         queue.cancelAll(TAG)
         super.onStop()

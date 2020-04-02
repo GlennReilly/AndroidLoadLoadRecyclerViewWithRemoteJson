@@ -19,5 +19,5 @@ class FactRow {
     var description: String? = null
 
     @SerializedName("imageHref")
-    var imageHref: Any? = null
+    var imageHref: String? = null
 }
