@@ -35,6 +35,7 @@ class FactListFragment : Fragment() {
 
     companion object {
         val TAG = FactListFragment::class.java.simpleName
+        const val url = "https://dl.dropboxusercontent.com/s/2iodh4vg0eortkl/facts.json"
     }
 
     override fun onCreateView(
@@ -47,16 +48,23 @@ class FactListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        setupToolbar(view)
+        setupPullToRefresh(view)
+        setupRecyclerView(view)
+    }
+
+    private fun setupPullToRefresh(view: View) {
+        val pullToRefresh: SwipeRefreshLayout = view.findViewById(R.id.pullToRefresh)
+        pullToRefresh.setOnRefreshListener {
+            requestFacts()
+            pullToRefresh.isRefreshing = false
+        }
+    }
+
+    private fun setupToolbar(view: View) {
         toolbar = view.findViewById(R.id.toolbar)
         toolbar.title = getString(R.string.temporaryTitle)
-        val pullToRefresh: SwipeRefreshLayout = view.findViewById(R.id.pullToRefresh)
-        pullToRefresh.setOnRefreshListener(object : SwipeRefreshLayout.OnRefreshListener {
-            override fun onRefresh() {
-                requestFacts()
-                pullToRefresh.setRefreshing(false)
-            }
-        })
-        setupRecyclerView(view)
     }
 
     private fun setupRecyclerView(view: View) {
@@ -71,23 +79,7 @@ class FactListFragment : Fragment() {
         requestFacts()
     }
 
-    private fun updateRecyclerView(facts: Facts) {
-        facts.factRows?.filter {
-            (it.description.isNullOrBlank() &&
-                    it.title.isNullOrBlank() &&
-                    it.imageHref.isNullOrBlank()).not()
-        }
-            ?.let {
-                canAdapter = CanAdapter(it, activity)
-            }
-
-        recyclerView.apply {
-            adapter = canAdapter.apply { notifyDataSetChanged() }
-        }
-    }
-
     private fun requestFacts() {
-        val url = "https://dl.dropboxusercontent.com/s/2iodh4vg0eortkl/facts.json"
         queue = Volley.newRequestQueue(activity)
         val jsonObjectRequest = JsonObjectRequest(
             Request.Method.GET,
@@ -104,29 +96,39 @@ class FactListFragment : Fragment() {
         )
 
         queue.add(jsonObjectRequest)
+    }
 
+    private fun updateRecyclerView(facts: Facts) {
+        facts.factRows?.filter {
+            (it.description.isNullOrBlank() &&
+                    it.title.isNullOrBlank() &&
+                    it.imageHref.isNullOrBlank()).not()
+        }?.let {
+            canAdapter = CanAdapter(it, activity)
+        }
+
+        recyclerView.apply {
+            adapter = canAdapter.apply { notifyDataSetChanged() }
+        }
     }
 
     class CanAdapter(
         private val itemList: List<FactRow>,
         private val activity: FragmentActivity?
-    ) :
-        RecyclerView.Adapter<CanAdapter.ItemOfInterestViewHolder>() {
+    ) : RecyclerView.Adapter<CanAdapter.ItemOfInterestViewHolder>() {
 
         private lateinit var context: Context
 
         override fun onCreateViewHolder(
-            parent: ViewGroup,
-            viewType: Int
+            parent: ViewGroup, viewType: Int
         ): ItemOfInterestViewHolder {
             context = parent.context
 
-            val rowView: View =
-                LayoutInflater.from(parent.context).inflate(R.layout.row_layout, parent, false)
+            val rowView: View = LayoutInflater.from(parent.context)
+                .inflate(R.layout.row_layout, parent, false)
+
             return ItemOfInterestViewHolder(rowView)
         }
-
-        override fun getItemCount() = itemList.size
 
         override fun onBindViewHolder(holder: ItemOfInterestViewHolder, position: Int) {
             holder.rowView.findViewById<AppCompatTextView>(R.id.title).apply {
@@ -145,6 +147,8 @@ class FactListFragment : Fragment() {
                     .into(imageView)
             }
         }
+
+        override fun getItemCount() = itemList.size
 
         data class ItemOfInterestViewHolder(val rowView: View) : RecyclerView.ViewHolder(rowView)
     }
