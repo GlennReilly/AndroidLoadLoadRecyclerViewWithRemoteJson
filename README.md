@@ -1,4 +1,7 @@
 # AndroidLoadRecyclerViewWithRemoteJson
-- A demo Android app that illustrates the loading of a RecyclerView with data parsed from a remote JSON file.
+- A demo Kotlin Android app that illustrates the loading of a RecyclerView with data parsed from a remote JSON file.
 
-This has been created with the Glide image loading and caching library for Android https://github.com/bumptech/glide
+### This has been created with the following libraries:
+- Glide image loading and caching library for Android https://github.com/bumptech/glide 
+- Volley for networking: https://github.com/google/volley
+- Gson for deserialization: https://github.com/google/gson
