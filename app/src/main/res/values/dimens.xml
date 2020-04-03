@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="imageWidth">88dp</dimen>
+    <dimen name="imageWidth">100dp</dimen>
     <dimen name="bodyTextSize">16sp</dimen>
     <dimen name="headingTextSize">18sp</dimen>
     <dimen name="imagePaddingStart">24dp</dimen>
